@@ -2,6 +2,7 @@
 name = "poly2geojson"
 description = "Convert from Osmosis POLY to GeoJSON"
 license = "GPL-3.0-or-later"
+repository = "https://github.com/frafra/poly2geojson"
 version = "0.1.0"
 authors = ["Francesco Frassinelli <fraph24@gmail.com>"]
 edition = "2018"
