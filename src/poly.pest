@@ -1,0 +1,15 @@
+name = { (!"\n" ~ ANY)+ }
+
+separator = _{ (" " | "\t")+ }
+
+decimal = _{ sign? ~ number ~ ("." ~ number ~ ("E" ~ sign ~ number)?)? }
+sign = _{ "+" | "-" }
+number = _{ ASCII_DIGIT+ }
+
+file = { SOI ~ multipolygon ~ NEWLINE? ~ EOI }
+multipolygon = _{ name ~ NEWLINE ~ (polygon ~ NEWLINE)* ~ "END"}
+
+polygon = { name ~ NEWLINE ~ (point ~ NEWLINE)* ~ "END" }
+point = { separator? ~ x ~ separator ~ y}
+x = { decimal }
+y = { decimal }
