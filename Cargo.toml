@@ -12,4 +12,4 @@ edition = "2018"
 [dependencies]
 pest = "^2.1"
 pest_derive = "^2.1"
-geojson = "*"
+geojson = "^0.21.0"
