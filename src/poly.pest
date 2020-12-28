@@ -1,4 +1,4 @@
-name = { (!"\n" ~ ANY)+ }
+name = { (!"\n" ~ !ASCII_DIGIT+ ~ ANY)+ }
 
 separator = _{ (" " | "\t")+ }
 
