@@ -3,8 +3,9 @@ extern crate pest;
 extern crate pest_derive;
 
 use std::io::{self, Read};
+use std::path::{Path};
 
-use geojson::{Feature, GeoJson, Geometry, Value};
+use rusqlite::{Connection, Result, LoadExtensionGuard};
 
 use pest::Parser;
 
@@ -12,23 +13,30 @@ use pest::Parser;
 #[grammar = "poly.pest"]
 pub struct PolyParser;
 
+fn load_spatialite(conn: &Connection) -> Result<()> {
+    let _guard = LoadExtensionGuard::new(conn)?;
 
-fn main() -> io::Result<()> {
+    conn.load_extension(Path::new("mod_spatialite"), None)
+}
+
+fn main() -> Result<()> {
     let mut buffer = String::new();
     let mut stdin = io::stdin();
-    stdin.read_to_string(&mut buffer)?;
+    stdin.read_to_string(&mut buffer).unwrap();
 
     let file = PolyParser::parse(Rule::file, &buffer)
         .expect("unsuccessful parse")
         .next().unwrap();
     
-    let mut multipolygon: Vec<Vec<Vec<Vec<f64>>>> = Vec::new();
+    let conn = Connection::open(":memory:")?;
+    load_spatialite(&conn)?;
 
+    let mut complete_wkt = String::new();
     for file_pair in file.into_inner() {
         match file_pair.as_rule() {
             Rule::ring => {
                 let mut subtract = false;
-                let mut points = vec![];
+                let mut wkt = String::from("POLYGON((");
                 for polygon_pair in file_pair.into_inner() {
                     match polygon_pair.as_rule() {
                         Rule::name => (),
@@ -51,32 +59,46 @@ fn main() -> io::Result<()> {
                                     _ => unreachable!(),
                                 }
                             }
-                            points.push(vec![x, y]);
+                            wkt.push_str(&x.to_string());
+                            wkt.push(' ');
+                            wkt.push_str(&y.to_string());
+                            wkt.push(',');
                         },
                         _ => unreachable!(),
                     }
                 }
+                wkt.pop(); // remove last comma
+                wkt.push_str("))");
+                if complete_wkt.is_empty() {
+                    complete_wkt = wkt;
+                    continue;
+                }
                 if subtract {
-                    multipolygon[0].push(points);
+                    complete_wkt = conn.query_row("
+                        SELECT AsText(ST_Difference(
+                            SetSRID(GeomFromText(?1), 4326),
+                            SetSRID(GeomFromText(?2), 4326)
+                        ))
+                    ", &[complete_wkt, wkt], |row| row.get(0)).unwrap()
                 } else {
-                    multipolygon.push(vec![points]);
+                    complete_wkt = conn.query_row("
+                        SELECT AsText(ST_Union(
+                            SetSRID(GeomFromText(?1), 4326),
+                            SetSRID(GeomFromText(?2), 4326)
+                        ))
+                    ", &[complete_wkt, wkt], |row| row.get(0)).unwrap();
                 }
             },
             Rule::EOI => (),
             _ => unreachable!(),
         }
     }
-    let geometry = Geometry::new(Value::MultiPolygon(multipolygon));
-    let geojson = GeoJson::Feature(Feature {
-        bbox: None,
-        geometry: Some(geometry),
-        id: None,
-        properties: None,
-        foreign_members: None,
-    });
-
-    let geojson_string = geojson.to_string();
-    println!("{}", geojson_string);
+    let geojson: String = conn.query_row("
+            SELECT AsGeoJSON(
+                SetSRID(GeomFromText(?1), 4326)
+            )
+        ", &[&complete_wkt], |row| row.get(0)).unwrap();
+    println!("{}", geojson);
 
     Ok(())
 }
