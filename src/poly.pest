@@ -6,10 +6,10 @@ decimal = _{ sign? ~ number ~ ("." ~ number ~ ("E" ~ sign ~ number)?)? }
 sign = _{ "+" | "-" }
 number = _{ ASCII_DIGIT+ }
 
-file = { SOI ~ multipolygon ~ NEWLINE? ~ EOI }
-multipolygon = _{ name ~ NEWLINE ~ (polygon ~ NEWLINE)* ~ "END"}
+file = { SOI ~ (ring ~ NEWLINE)* ~ "END" ~ NEWLINE* ~ EOI }
 
-polygon = { name ~ NEWLINE ~ (point ~ NEWLINE)* ~ "END" }
+ring = { (name ~ NEWLINE)? ~ subtract? ~ number ~ NEWLINE ~ (point ~ NEWLINE)* ~ "END" }
+subtract = { "!" }
 point = { separator? ~ x ~ separator ~ y}
 x = { decimal }
 y = { decimal }

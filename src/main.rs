@@ -22,16 +22,19 @@ fn main() -> io::Result<()> {
         .expect("unsuccessful parse")
         .next().unwrap();
     
-    let mut multipolygon = Vec::new();
+    let mut multipolygon: Vec<Vec<Vec<Vec<f64>>>> = Vec::new();
 
     for file_pair in file.into_inner() {
         match file_pair.as_rule() {
-            Rule::name => (),
-            Rule::polygon => {
+            Rule::ring => {
+                let mut subtract = false;
                 let mut points = vec![];
                 for polygon_pair in file_pair.into_inner() {
                     match polygon_pair.as_rule() {
                         Rule::name => (),
+                        Rule::subtract => {
+                            subtract = true;
+                        },
                         Rule::point => {
                             let mut x: f64 = 0.0;
                             let mut y: f64 = 0.0;
@@ -53,7 +56,11 @@ fn main() -> io::Result<()> {
                         _ => unreachable!(),
                     }
                 }
-                multipolygon.push(vec![points]);
+                if subtract {
+                    multipolygon[0].push(points);
+                } else {
+                    multipolygon.push(vec![points]);
+                }
             },
             Rule::EOI => (),
             _ => unreachable!(),
