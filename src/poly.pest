@@ -1,4 +1,4 @@
-name = { (!"\n" ~ !ASCII_DIGIT+ ~ ANY)+ }
+name = { (!"\n" ~ ANY)+ }
 
 separator = _{ (" " | "\t")+ }
 
@@ -8,7 +8,7 @@ number = _{ ASCII_DIGIT+ }
 
 file = { SOI ~ (ring ~ NEWLINE)* ~ "END" ~ NEWLINE* ~ EOI }
 
-ring = { (name ~ NEWLINE)? ~ subtract? ~ number ~ NEWLINE ~ (point ~ NEWLINE)* ~ "END" }
+ring = { (name ~ NEWLINE)? ~ subtract? ~ name ~ NEWLINE ~ (point ~ NEWLINE)* ~ "END" }
 subtract = { "!" }
 point = { separator? ~ x ~ separator ~ y}
 x = { decimal }
