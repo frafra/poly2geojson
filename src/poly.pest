@@ -2,13 +2,13 @@ name = { (!"\n" ~ ANY)+ }
 
 separator = _{ (" " | "\t")+ }
 
-decimal = _{ sign? ~ number ~ ("." ~ number ~ ("E" ~ sign ~ number)?)? }
+decimal = _{ sign? ~ number ~ ("." ~ number)? ~ (("E" | "e") ~ sign? ~ number)? }
 sign = _{ "+" | "-" }
 number = _{ ASCII_DIGIT+ }
 
-file = { SOI ~ (ring ~ NEWLINE)* ~ "END" ~ NEWLINE* ~ EOI }
+file = { SOI ~ name ~ NEWLINE ~ (ring ~ NEWLINE)* ~ "END" ~ NEWLINE* ~ EOI }
 
-ring = { (name ~ NEWLINE)? ~ subtract? ~ name ~ NEWLINE ~ (point ~ NEWLINE)* ~ "END" }
+ring = { (name | (subtract ~ name)) ~ NEWLINE ~ (point ~ NEWLINE)* ~ "END" }
 subtract = { "!" }
 point = { separator? ~ x ~ separator ~ y}
 x = { decimal }
